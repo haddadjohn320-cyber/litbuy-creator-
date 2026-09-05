@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  --color-coal: #141512;
+  --color-char: #1c1e19;
+  --color-char2: #262922;
+  --color-line: #34382e;
+  --color-line2: #454a3c;
+  --color-bone: #f2efe4;
+  --color-mute: #a9ab9c;
+  --color-dim: #7d8073;
+  --color-flame: #ff6a00;
+  --color-ember: #ff8b2d;
+  --color-sun: #ffd21e;
+  --color-ok: #4cc38a;
+  --color-warn: #f5a524;
+  --color-bad: #f0564a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-coal);
+  color: var(--color-bone);
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--color-flame);
+  color: #141512;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line2) transparent;
+}
+
+input[type="range"] {
+  accent-color: var(--color-flame);
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise-in {
+  animation: rise-in 0.35s ease both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-in {
+  animation: toast-in 0.25s ease both;
+}
