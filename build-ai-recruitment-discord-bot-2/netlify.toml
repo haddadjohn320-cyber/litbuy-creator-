@@ -1,7 +1,0 @@
-# Netlify deployment for this Next.js fullstack app.
-# The plugin makes API routes (route handlers) work as Netlify functions.
-[build]
-  command = "npm run build"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
