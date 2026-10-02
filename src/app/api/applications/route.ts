@@ -1,5 +1,6 @@
 import { desc } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 import { getDb } from "@/db";
 import { applications } from "@/db/schema";
 import { clientIp, isAuthorized, rateLimited } from "@/lib/auth";
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "screenshot-too-big" }, { status: 400 });
   }
 
+  // 1. Insertion dans Neon
   const [row] = await db
     .insert(applications)
     .values({
@@ -113,6 +115,28 @@ export async function POST(req: Request) {
       status: "new",
     })
     .returning({ id: applications.id });
+
+  // 2. Envoi de l'email automatique via Gmail
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"LITBUY" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: "Your Application at LITBUY",
+        text: `Hi!\n\nThank you for submitting your application on our platform. I took a look at your profile and we’d love to discuss how we can work together with LITBUY.\n\nI just have one quick question for you: Are you able to create content where you appear on camera yourself ?\n\nPlease contact me directly on Discord so we can discuss the details!\nDiscord Link: https://discord.com/users/1341731101822947440\n\nLooking forward to hearing from you!\n\nBest regards`,
+      });
+    } catch (err) {
+      console.error("Erreur lors de l'envoi de l'email :", err);
+    }
+  }
 
   return NextResponse.json({ id: row.id }, { status: 201 });
 }
