@@ -1,11 +1,13 @@
 import { desc } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { getDb } from "@/db";
 import { applications } from "@/db/schema";
 import { clientIp, isAuthorized, rateLimited } from "@/lib/auth";
 import { ensureSchema } from "@/lib/db-bootstrap";
 import { FREQ_VALUES, LANG_VALUES } from "@/lib/i18n";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const TIKTOK_RE = /^https?:\/\/(www\.|m\.)?tiktok\.com\/@?[A-Za-z0-9_.]+/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -97,7 +99,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "screenshot-too-big" }, { status: 400 });
   }
 
-  // 1. Insertion dans Neon
+  // 1. Sauvegarde dans la base de données Neon
   const [row] = await db
     .insert(applications)
     .values({
@@ -116,25 +118,17 @@ export async function POST(req: Request) {
     })
     .returning({ id: applications.id });
 
-  // 2. Envoi de l'email automatique via Gmail
-  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+  // 2. Envoi de l'e-mail automatique via Resend (Domaine authentifié)
+  if (process.env.RESEND_API_KEY) {
     try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.GMAIL_USER,
-          pass: process.env.GMAIL_APP_PASSWORD,
-        },
-      });
-
-      await transporter.sendMail({
-        from: `"LITBUY" <${process.env.GMAIL_USER}>`,
+      await resend.emails.send({
+        from: "LITBUY <contact@litbuycreator.com>",
         to: email,
         subject: "Your Application at LITBUY",
         text: `Hi!\n\nThank you for submitting your application on our platform. I took a look at your profile and we’d love to discuss how we can work together with LITBUY.\n\nI just have one quick question for you: Are you able to create content where you appear on camera yourself ?\n\nPlease contact me directly on Discord so we can discuss the details!\nDiscord Link: https://discord.com/users/1341731101822947440\n\nLooking forward to hearing from you!\n\nBest regards`,
       });
     } catch (err) {
-      console.error("Erreur lors de l'envoi de l'email :", err);
+      console.error("Erreur lors de l'envoi Resend :", err);
     }
   }
 
