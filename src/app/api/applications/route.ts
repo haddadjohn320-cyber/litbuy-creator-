@@ -7,8 +7,6 @@ import { clientIp, isAuthorized, rateLimited } from "@/lib/auth";
 import { ensureSchema } from "@/lib/db-bootstrap";
 import { FREQ_VALUES, LANG_VALUES } from "@/lib/i18n";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const TIKTOK_RE = /^https?:\/\/(www\.|m\.)?tiktok\.com\/@?[A-Za-z0-9_.]+/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -121,6 +119,7 @@ export async function POST(req: Request) {
   // 2. Envoi de l'e-mail automatique via Resend (Domaine authentifié)
   if (process.env.RESEND_API_KEY) {
     try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
         from: "LITBUY <contact@litbuycreator.com>",
         to: email,
