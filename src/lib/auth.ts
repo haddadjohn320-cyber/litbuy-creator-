@@ -3,21 +3,23 @@ import { cookies } from "next/headers";
 
 const COOKIE = "lb_admin";
 
-function secret() {
-  return process.env.ADMIN_SECRET || "litbuy-creators-demo-secret";
+export function adminConfigured(): boolean {
+  return Boolean(process.env.ADMIN_SECRET && process.env.ADMIN_PASSCODE);
 }
 
 /** Session token (HMAC). Safe to hand to an authenticated admin client. */
 export function adminToken(): string {
-  return createHmac("sha256", secret()).update("litbuy-admin-session").digest("hex");
+  if (!adminConfigured()) throw new Error("Admin credentials are not configured");
+  return createHmac("sha256", process.env.ADMIN_SECRET!).update("litbuy-admin-session").digest("hex");
 }
 
 export function expectedPasscode(): string {
-  return process.env.ADMIN_PASSCODE || "litbuy2026";
+  return process.env.ADMIN_PASSCODE ?? "";
 }
 
 /** Constant-time comparison to avoid timing attacks on the passcode. */
 export function passcodeMatches(given: string): boolean {
+  if (!adminConfigured()) return false;
   const a = createHash("sha256").update(given).digest();
   const b = createHash("sha256").update(expectedPasscode()).digest();
   return timingSafeEqual(a, b);
@@ -25,6 +27,7 @@ export function passcodeMatches(given: string): boolean {
 
 /** Accepts either the Bearer session token (header) or the httpOnly cookie. */
 export async function isAuthorized(req?: Request): Promise<boolean> {
+  if (!adminConfigured()) return false;
   const header = req?.headers.get("authorization") ?? "";
   if (header === `Bearer ${adminToken()}`) return true;
   const store = await cookies();

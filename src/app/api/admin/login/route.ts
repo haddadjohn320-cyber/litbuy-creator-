@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  adminConfigured,
   adminToken,
   clientIp,
   passcodeMatches,
@@ -8,6 +9,9 @@ import {
 } from "@/lib/auth";
 
 export async function POST(req: Request) {
+  if (!adminConfigured()) {
+    return NextResponse.json({ error: "admin-not-configured" }, { status: 503 });
+  }
   const ip = clientIp(req);
   if (rateLimited(ip, 5, 60_000)) {
     return NextResponse.json({ error: "too-many" }, { status: 429 });
