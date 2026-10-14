@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "boot": "next build && node server.js",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
