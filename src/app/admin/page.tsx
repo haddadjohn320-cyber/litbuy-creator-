@@ -183,6 +183,10 @@ export default function AdminPage() {
         setLoginErr(t("admin_later"));
         return;
       }
+      if (res.status === 503) {
+        setLoginErr(t("admin_not_configured"));
+        return;
+      }
       if (res.status === 404 || res.status === 500) {
         setLoginErr(t("admin_deploy"));
         return;
