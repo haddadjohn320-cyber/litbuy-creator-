@@ -28,6 +28,7 @@ type AppRow = {
   email: string;
   screenshot: string | null;
   status: string;
+  note: string | null;
   createdAt: string;
 };
 
@@ -89,6 +90,8 @@ export default function AdminPage() {
   const [filter, setFilter] = useState<"all" | Status>("all");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<number | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
+  const [noteSaving, setNoteSaving] = useState<number | null>(null);
   const [toast, setToast] = useState("");
   const [dbError, setDbError] = useState("");
 
@@ -217,6 +220,7 @@ export default function AdminPage() {
     setToken(null);
     storeToken(null);
     setRows([]);
+    setNoteDrafts({});
     setAuth("out");
   }
 
@@ -229,11 +233,39 @@ export default function AdminPage() {
       });
       if (res.ok) {
         const updated: AppRow = await res.json();
-        setRows((r) => r.map((row) => (row.id === id ? updated : row)));
+        setRows((r) => r.map((row) => (row.id === id ? { ...row, status: updated.status } : row)));
         showToast(t("admin_status_updated"));
       }
     } catch {
       showToast(t("err_server"));
+    }
+  }
+
+  async function saveNote(id: number) {
+    const current = rows.find((row) => row.id === id);
+    if (!current || noteSaving !== null) return;
+    const note = noteDrafts[id] ?? current.note ?? "";
+    setNoteSaving(id);
+    try {
+      const res = await fetchT(`/api/applications/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders(token) },
+        body: JSON.stringify({ note }),
+      });
+      if (!res.ok) {
+        showToast(t("admin_note_error"));
+        return;
+      }
+      const updated: AppRow = await res.json();
+      setRows((currentRows) =>
+        currentRows.map((row) => (row.id === id ? { ...row, note: updated.note } : row)),
+      );
+      setNoteDrafts((drafts) => ({ ...drafts, [id]: updated.note ?? "" }));
+      showToast(t("admin_note_saved"));
+    } catch {
+      showToast(t("admin_note_error"));
+    } finally {
+      setNoteSaving(null);
     }
   }
 
@@ -264,6 +296,7 @@ export default function AdminPage() {
       "id",
       "created_at",
       "status",
+      "note",
       "discord",
       "email",
       "tiktok_url",
@@ -281,6 +314,7 @@ export default function AdminPage() {
         r.id,
         r.createdAt,
         r.status,
+        esc(r.note),
         esc(r.discord),
         esc(r.email),
         esc(r.tiktokUrl),
@@ -314,7 +348,7 @@ export default function AdminPage() {
     return rows.filter((r) => {
       if (filter !== "all" && r.status !== filter) return false;
       if (!q) return true;
-      return [r.discord, r.email, r.tiktokUrl, r.priorAgents ?? ""]
+      return [r.discord, r.email, r.tiktokUrl, r.priorAgents ?? "", r.note ?? ""]
         .join(" ")
         .toLowerCase()
         .includes(q);
@@ -534,6 +568,11 @@ export default function AdminPage() {
                         >
                           {t(`admin_${status}`)}
                         </span>
+                        {r.note && (
+                          <span className="rounded-full border border-line2 px-2.5 py-0.5 text-[10px] font-bold text-mute">
+                            {t("admin_note_badge")}
+                          </span>
+                        )}
                         <IconChevron
                           className={`h-4 w-4 text-dim transition-transform ${open ? "rotate-180" : ""}`}
                         />
@@ -639,6 +678,43 @@ export default function AdminPage() {
                             ) : (
                               <p className="text-sm text-dim">{t("admin_no_shot")}</p>
                             )}
+                          </div>
+
+                          <div className="border-t border-line pt-4">
+                            <label
+                              htmlFor={`note-${r.id}`}
+                              className="mb-1.5 block text-[11px] font-bold text-dim"
+                            >
+                              {t("admin_note_label")}
+                            </label>
+                            <textarea
+                              id={`note-${r.id}`}
+                              value={noteDrafts[r.id] ?? r.note ?? ""}
+                              onChange={(event) =>
+                                setNoteDrafts((drafts) => ({
+                                  ...drafts,
+                                  [r.id]: event.target.value,
+                                }))
+                              }
+                              disabled={noteSaving === r.id}
+                              maxLength={5_000}
+                              rows={4}
+                              placeholder={t("admin_note_placeholder")}
+                              className="w-full resize-y rounded-lg border border-line bg-char px-3 py-2 text-sm text-bone outline-none transition placeholder:text-dim focus:border-ember"
+                            />
+                            <div className="mt-2 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => void saveNote(r.id)}
+                                disabled={
+                                  noteSaving !== null ||
+                                  (noteDrafts[r.id] ?? r.note ?? "") === (r.note ?? "")
+                                }
+                                className="rounded-lg bg-ember px-4 py-2 text-xs font-bold text-coal transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {noteSaving === r.id ? t("admin_note_saving") : t("admin_note_save")}
+                              </button>
+                            </div>
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">

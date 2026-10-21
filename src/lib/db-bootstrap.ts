@@ -29,9 +29,11 @@ export function ensureSchema(db: DbLike): Promise<void> {
           email text NOT NULL,
           screenshot text,
           status text NOT NULL DEFAULT 'new',
+          note text,
           created_at timestamp DEFAULT now() NOT NULL
         )`,
       );
+      await db.execute(sql`ALTER TABLE applications ADD COLUMN IF NOT EXISTS note text`);
     })().catch((err) => {
       g.__lb_schema = undefined; // allow retry on next request
       throw err;

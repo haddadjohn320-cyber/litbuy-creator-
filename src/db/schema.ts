@@ -21,6 +21,7 @@ export const applications = pgTable("applications", {
   email: text("email").notNull(),
   screenshot: text("screenshot"), // compressed data-URL of the Litbuy dashboard
   status: text("status").notNull().default("new"),
+  note: text("note"),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
 });
 
